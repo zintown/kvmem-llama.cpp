@@ -1,0 +1,41 @@
+diff --git a/ggml/src/ggml-cuda/vendors/hip.h b/ggml/src/ggml-cuda/vendors/hip.h
+index 9aa558f3f..db370cd1a 100644
+--- a/ggml/src/ggml-cuda/vendors/hip.h
++++ b/ggml/src/ggml-cuda/vendors/hip.h
+@@ -272,8 +272,17 @@ static __device__ __forceinline__ int __vsubss4(const int a, const int b) {
+ #endif // __has_builtin(__builtin_elementwise_sub_sat)
+ }
+ 
++// RDNA has no packed-byte subtract or compare, so the per-byte forms below
++// cost a loop of byte extracts per call; the IQ2/IQ3 dot products call
++// __vcmpne4/__vsub4 once per 4 weights. These SWAR versions keep each byte's
++// carry or borrow inside the byte, and __vsub4 wraps like CUDA's instead of
++// saturating (the old forwarding to __vsubss4 diverged for results outside
++// int8 range).
+ static __device__ __forceinline__ int __vsub4(const int a, const int b) {
+-    return __vsubss4(a, b);
++    const unsigned int ua = a;
++    const unsigned int ub = b;
++    const unsigned int d = (ua | 0x80808080u) - (ub & 0x7f7f7f7fu);
++    return d ^ ((ua ^ ~ub) & 0x80808080u);
+ }
+ 
+ static __device__ __forceinline__ unsigned int __vcmpeq4(unsigned int a, unsigned int b) {
+@@ -289,13 +298,8 @@ static __device__ __forceinline__ unsigned int __vcmpeq4(unsigned int a, unsigne
+ }
+ 
+ static __device__ __forceinline__ unsigned int __vcmpne4(unsigned int a, unsigned int b) {
+-    const uint8x4_t& va = reinterpret_cast<const uint8x4_t&>(a);
+-    const uint8x4_t& vb = reinterpret_cast<const uint8x4_t&>(b);
+-    unsigned int c;
+-    uint8x4_t& vc = reinterpret_cast<uint8x4_t&>(c);
+-#pragma unroll
+-    for (int i = 0; i < 4; ++i) {
+-        vc[i] = va[i] == vb[i] ? 0x00 : 0xff;
+-    }
+-    return c;
++    const unsigned int x = a ^ b;
++    // Bit 7 of each byte becomes 1 exactly when that byte of x is nonzero.
++    const unsigned int t = (((x & 0x7f7f7f7fu) + 0x7f7f7f7fu) | x) & 0x80808080u;
++    return (t >> 7) * 0xffu;
+ }

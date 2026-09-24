@@ -12,6 +12,12 @@ routes quantized-KV Flash Attention to the existing VEC kernel, avoiding the
 zero-occupancy assertion (`max_blocks_per_sm > 0`) of the larger tile kernel.
 It is replayed after the cumulative KVMem patch and is limited to RDNA2.
 
+`0006-hip-swar-byte-ops.patch` replaces HIP's per-byte `__vsub4` and
+`__vcmpne4` emulation with SWAR arithmetic. RDNA has no packed-byte subtract or
+compare, and the IQ2/IQ3 dot products call both once per 4 weights. `__vsub4`
+now wraps like CUDA's instead of saturating. On RX 6900 XT, IQ2/IQ3 mat-vec
+kernels run 27-33% faster; `test-backend-ops -o MUL_MAT` passes 1253/1253.
+
 `reasoning-budget-upgrade.patch` upgrades the v0.15.0 ReplaySSM tree.
 `replayssm-upgrade.patch` upgrades the preceding multimodal/query-replay tree.
 `multimodal-upgrade.patch` upgrades the KVMem working tree recorded before

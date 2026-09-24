@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LLAMA="${KVMEM_LLAMA_DIR:-$ROOT/llama.cpp}"
 PATCH="$ROOT/patches/llama-kvmem-current.patch"
 RDNA2_FATTN="$ROOT/patches/0005-hip-rdna2-quantized-kv-fa-vec.patch"
+HIP_SWAR="$ROOT/patches/0006-hip-swar-byte-ops.patch"
 BUDGET_UPGRADE="$ROOT/patches/reasoning-budget-upgrade.patch"
 REPLAY_UPGRADE="$ROOT/patches/replayssm-upgrade.patch"
 UPGRADE="$ROOT/patches/multimodal-upgrade.patch"
@@ -55,4 +56,12 @@ else
     git apply --check "$RDNA2_FATTN"
     git apply "$RDNA2_FATTN"
     echo "applied gfx1030 RDNA2 quantized-KV Flash Attention patch"
+fi
+
+if git apply --reverse --check "$HIP_SWAR" 2>/dev/null; then
+    echo "HIP SWAR byte-op patch already applied"
+else
+    git apply --check "$HIP_SWAR"
+    git apply "$HIP_SWAR"
+    echo "applied HIP SWAR byte-op patch"
 fi
