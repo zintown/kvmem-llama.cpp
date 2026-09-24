@@ -73,19 +73,23 @@ int main() {
     std::map<std::string, std::string> environment = {
         {"LLAMA_ARG_MODEL", "model with spaces.gguf"}, {"LLAMA_ARG_UI", "false"},
         {"LLAMA_API_KEY", "env-key"}, {"LLAMA_ARG_MMPROJ_OFFLOAD", "ON"},
+        {"LLAMA_ARG_SPEC_DRAFT_MODEL", "draft model.gguf"},
     };
     auto lookup = [&](const char * name) -> const char * {
         auto it = environment.find(name);
         return it == environment.end() ? nullptr : it->second.c_str();
     };
     auto args = kvmem_environment_args(lookup);
-    check(args.size() == 6 && args[0].value == "--model" && args[1].value == "model with spaces.gguf");
+    check(args.size() == 8 && args[0].value == "--model" && args[1].value == "model with spaces.gguf");
     check(args[0].source == "env:LLAMA_ARG_MODEL");
     check(std::any_of(args.begin(), args.end(), [](const kvmem_start_arg & a) { return a.value == "--no-ui"; }));
+    check(std::any_of(args.begin(), args.end(), [](const kvmem_start_arg & a) { return a.value == "--spec-draft-model"; }));
     environment["LLAMA_ARG_UI"] = "sometimes";
     rejects([&] { kvmem_environment_args(lookup); });
     check(kvmem_config_key("-ngl") == "--n-gpu-layers");
     check(kvmem_config_key("--path") == "--ui-dir");
+    check(kvmem_config_key("-md") == "--spec-draft-model");
+    check(kvmem_config_key("--model-draft") == "--spec-draft-model");
     check(kvmem_config_key("--no-mmap") == "--load-mode");
     std::puts("server options: passed");
 }

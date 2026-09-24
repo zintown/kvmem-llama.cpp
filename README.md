@@ -266,10 +266,18 @@ A CLI key does not revoke an environment key.
 | `LLAMA_API_KEY`, `LLAMA_ARG_API_KEY_FILE` | Authentication; no secret values are logged |
 | `LLAMA_ARG_JINJA`, `LLAMA_ARG_CHAT_TEMPLATE`, `LLAMA_ARG_CHAT_TEMPLATE_FILE`, `LLAMA_ARG_CHAT_TEMPLATE_KWARGS` | Templates; disabling Jinja is unsupported |
 | `LLAMA_ARG_REASONING_EFFORT`, `LLAMA_ARG_THINK_BUDGET`, `LLAMA_ARG_THINK_BUDGET_MESSAGE`, `LLAMA_ARG_TOP_K` | Reasoning and top-k sampling |
-| `LLAMA_ARG_SPEC_TYPE`, `LLAMA_ARG_SPEC_DRAFT_N_MAX`, `LLAMA_ARG_SPEC_DRAFT_P_MIN` | Existing MTP settings; independent draft models remain unsupported |
+| `LLAMA_ARG_SPEC_TYPE`, `LLAMA_ARG_SPEC_DRAFT_N_MAX`, `LLAMA_ARG_SPEC_DRAFT_P_MIN` | Existing MTP settings |
+| `LLAMA_ARG_SPEC_DRAFT_MODEL` | Experimental local sidecar MTP GGUF; requires `LLAMA_ARG_SPEC_TYPE=draft-mtp` |
 
 Boolean environment values accept `1/0`, `true/false`, `on/off`, `yes/no`
 (case-insensitive). `--ui` / `--webui` can override `LLAMA_ARG_UI=false`.
+
+**Local experimental extension.** This branch accepts `--spec-draft-model` / `-md` / `--model-draft`
+in `llama-kvmem-server` and passes it to the existing KVMem speculative session. The upstream rc3 release
+does not expose independent draft models. Use one Qwen-compatible MTP GGUF only with
+`--spec-type draft-mtp`; on gfx1030 HIP with Flash Attention, keep the draft KV quantized
+(`--spec-kv-dtype q8_0` or `q4_0`), since F16 draft KV hits the RDNA2 FA occupancy assertion. This is
+single-slot and has not been validated as a replacement for the published CUDA recipes.
 Unsupported `LLAMA_ARG_*` names produce a warning without printing their values.
 Unsupported API-key/TLS variable names fail startup rather than silently leaving
 authentication or native TLS unconfigured. Empty keys and empty/unreadable key

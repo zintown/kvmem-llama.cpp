@@ -49,6 +49,7 @@ inline const std::vector<kvmem_env_option> & kvmem_env_options() {
         {"LLAMA_ARG_CHAT_TEMPLATE", "--chat-template"}, {"LLAMA_ARG_CHAT_TEMPLATE_FILE", "--chat-template-file"},
         {"LLAMA_ARG_SPEC_TYPE", "--spec-type"}, {"LLAMA_ARG_SPEC_DRAFT_N_MAX", "--spec-draft-n-max"},
         {"LLAMA_ARG_SPEC_DRAFT_P_MIN", "--spec-draft-p-min"},
+        {"LLAMA_ARG_SPEC_DRAFT_MODEL", "--spec-draft-model"},
     };
     return values;
 }
@@ -111,6 +112,7 @@ inline std::string kvmem_config_key(const char * raw) {
         {"-to", "--timeout"}, {"-lm", "--load-mode"}, {"--mmap", "--load-mode"},
         {"--no-mmap", "--load-mode"}, {"--mlock", "--load-mode"}, {"-ctk", "--cache-type-k"},
         {"-ctv", "--cache-type-v"}, {"--no-ui", "--ui"}, {"--webui", "--ui"},
+        {"-md", "--spec-draft-model"}, {"--model-draft", "--spec-draft-model"},
         {"--no-jinja", "--jinja"}, {"--no-mmproj-offload", "--mmproj-offload"},
         {"--chat-template-file", "--chat-template"}, {"--no-kvmem", "--kvmem"},
     };
