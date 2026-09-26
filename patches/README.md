@@ -18,6 +18,13 @@ compare, and the IQ2/IQ3 dot products call both once per 4 weights. `__vsub4`
 now wraps like CUDA's instead of saturating. On RX 6900 XT, IQ2/IQ3 mat-vec
 kernels run 27-33% faster; `test-backend-ops -o MUL_MAT` passes 1253/1253.
 
+`0007-hip-rdna2-fattn-vec-occupancy.patch` raises the VEC Flash Attention
+kernel's assumed occupancy on RDNA2 from one to two blocks per WGP. HIP reports
+one for the D=256 kernel, so decode attention was split into too few KV chunks
+(about three waves per SIMD) to hide memory latency. With GQA 6 (Qwen3.8-27B:
+24 Q / 4 KV heads, D=256) on RX 6900 XT, one decode FA call at 32K Q8 KV drops
+from 858 to 509 us (8K: 223 -> 153, 64K: 2492 -> 1428).
+
 `reasoning-budget-upgrade.patch` upgrades the v0.15.0 ReplaySSM tree.
 `replayssm-upgrade.patch` upgrades the preceding multimodal/query-replay tree.
 `multimodal-upgrade.patch` upgrades the KVMem working tree recorded before

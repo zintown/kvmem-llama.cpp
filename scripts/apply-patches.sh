@@ -6,6 +6,7 @@ LLAMA="${KVMEM_LLAMA_DIR:-$ROOT/llama.cpp}"
 PATCH="$ROOT/patches/llama-kvmem-current.patch"
 RDNA2_FATTN="$ROOT/patches/0005-hip-rdna2-quantized-kv-fa-vec.patch"
 HIP_SWAR="$ROOT/patches/0006-hip-swar-byte-ops.patch"
+RDNA2_FA_OCC="$ROOT/patches/0007-hip-rdna2-fattn-vec-occupancy.patch"
 BUDGET_UPGRADE="$ROOT/patches/reasoning-budget-upgrade.patch"
 REPLAY_UPGRADE="$ROOT/patches/replayssm-upgrade.patch"
 UPGRADE="$ROOT/patches/multimodal-upgrade.patch"
@@ -64,4 +65,12 @@ else
     git apply --check "$HIP_SWAR"
     git apply "$HIP_SWAR"
     echo "applied HIP SWAR byte-op patch"
+fi
+
+if git apply --reverse --check "$RDNA2_FA_OCC" 2>/dev/null; then
+    echo "RDNA2 vector Flash Attention occupancy patch already applied"
+else
+    git apply --check "$RDNA2_FA_OCC"
+    git apply "$RDNA2_FA_OCC"
+    echo "applied RDNA2 vector Flash Attention occupancy patch"
 fi
