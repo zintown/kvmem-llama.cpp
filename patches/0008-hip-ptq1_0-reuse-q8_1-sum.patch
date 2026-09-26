@@ -1,0 +1,53 @@
+diff --git a/ggml/src/ggml-cuda/vecdotq.cuh b/ggml/src/ggml-cuda/vecdotq.cuh
+index 65dbbb957..de515dcbd 100644
+--- a/ggml/src/ggml-cuda/vecdotq.cuh
++++ b/ggml/src/ggml-cuda/vecdotq.cuh
+@@ -900,10 +900,10 @@ static __device__ __forceinline__ float vec_dot_ptq1_0_q8_1(const void * __restr
+     // Host mirror of this branch lives in tests/test-ptq1_0-cuda-dot.cpp; update both together.
+     const block_ptq1_0 * bq      = (const block_ptq1_0 *) vbq + kbx;
+     int                  sumi[4] = { 0, 0, 0, 0 };
+-    int                  sumu[4] = { 0, 0, 0, 0 };
+ 
+     // Four packed bytes advance in the low bytes of 16-bit lanes, so one 32-bit multiply steps four trit streams at once (3*255 < 2^16, no cross-lane carry).
+     // Digits come out as {0,1,2}; the -1 folds into the activation sums, which a per-byte subtract cannot do borrow-free.
++    // Q8_1 already carries d8*sum(a) per 32 values in ds.y, so the -sum(a) term costs no extra dp4a (as in Q4_0).
+     // __builtin_amdgcn_perm picks sel bit2=0 from the SECOND arg, opposite of CUDA __byte_perm, so the operands are swapped vs _multi.
+     const uint32_t * qs32 = (const uint32_t *) bq->qs;
+ 
+@@ -922,8 +922,7 @@ static __device__ __forceinline__ float vec_dot_ptq1_0_q8_1(const void * __restr
+             const int e = t * 16 + 4 * w;
+             const int u = get_int_b4(bq8_1[iqs + (e >> 5)].qs, (e & 31) >> 2);
+             const int q = (int) __builtin_amdgcn_perm(w_hi, w_lo, 0x07050301);
+-            sumi[e >> 5] += ggml_cuda_dp4a(q, u, 0);
+-            sumu[e >> 5] += ggml_cuda_dp4a(0x01010101, u, 0);
++            sumi[e >> 5] = ggml_cuda_dp4a(q, u, sumi[e >> 5]);
+         }
+     }
+ 
+@@ -942,8 +941,7 @@ static __device__ __forceinline__ float vec_dot_ptq1_0_q8_1(const void * __restr
+             const int e = 80 + t * 8 + 4 * w;
+             const int u = get_int_b4(bq8_1[iqs + (e >> 5)].qs, (e & 31) >> 2);
+             const int q = (int) __builtin_amdgcn_perm(w_hi, w_lo, 0x07050301);
+-            sumi[e >> 5] += ggml_cuda_dp4a(q, u, 0);
+-            sumu[e >> 5] += ggml_cuda_dp4a(0x01010101, u, 0);
++            sumi[e >> 5] = ggml_cuda_dp4a(q, u, sumi[e >> 5]);
+         }
+     }
+ 
+@@ -958,14 +956,14 @@ static __device__ __forceinline__ float vec_dot_ptq1_0_q8_1(const void * __restr
+             const int e      = 120 + t * 2 + h;
+             const int a      = (int) bq8_1[iqs + (e >> 5)].qs[e & 31];
+             sumi[e >> 5] += q * a;
+-            sumu[e >> 5] += a;
+         }
+     }
+ 
+     float acc = 0.0f;
+ #    pragma unroll
+     for (int k = 0; k < 4; ++k) {
+-        acc += __low2float(bq8_1[iqs + k].ds) * (float) (sumi[k] - sumu[k]);
++        const float2 ds8 = __half22float2(bq8_1[iqs + k].ds);
++        acc += ds8.x * (float) sumi[k] - ds8.y;
+     }
+     return (float) bq->d * acc;
+ #else

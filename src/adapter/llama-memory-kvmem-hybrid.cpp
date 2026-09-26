@@ -4,6 +4,8 @@
 #include "llama-impl.h"
 #include "llama-model.h"
 
+#include "ggml-cuda.h"
+
 #include <algorithm>
 #include <limits>
 #include <cstring>
